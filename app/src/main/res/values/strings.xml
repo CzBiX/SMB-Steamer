@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">SMB Steamer</string>
+    <string name="title_activity_server">Servers</string>
+
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_file_list">Files</string>
+</resources>
