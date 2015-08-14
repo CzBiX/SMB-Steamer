@@ -44,10 +44,11 @@ public class SmbFileItem {
         final Uri.Builder builder = new Uri.Builder();
         builder.scheme("http").encodedAuthority("127.0.0.1:" + HttpServer.PORT)
                 .encodedPath(HttpServer.URI_PREFIX)
-                .appendEncodedPath(url.getAuthority()).appendEncodedPath(url.getPath());
+                .appendEncodedPath(url.getAuthority())
+                .appendEncodedPath(Uri.encode(url.getPath().substring(1), "/"));
 
         final Uri uri = builder.build();
-        Log.d(TAG, "get http uri: " + uri.toString());
+        Log.v(TAG, "get http uri: " + uri.toString());
         return uri;
     }
 }

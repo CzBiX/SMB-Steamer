@@ -1,21 +1,20 @@
 package com.czbix.smbsteamer.helper;
 
+import android.net.Uri;
 import android.util.Log;
 
 import com.czbix.smbsteamer.BuildConfig;
 import com.czbix.smbsteamer.util.SmbUtils;
-import com.google.common.base.Stopwatch;
 import com.google.common.io.ByteStreams;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.UnknownHostException;
 import java.util.Map;
-import java.util.logging.Logger;
-import java.util.logging.Level;
-import java.util.concurrent.TimeUnit;
 
 import jcifs.smb.NtlmPasswordAuthentication;
+import jcifs.smb.SmbException;
 import jcifs.smb.SmbFile;
 
 public final class HttpServer extends NanoHTTPD {
@@ -52,27 +51,26 @@ public final class HttpServer extends NanoHTTPD {
     }
 
     private Response handleStream(String uri, IHTTPSession session) {
-        Stopwatch stopWatch = null;
-        if (BuildConfig.DEBUG) {
-            stopWatch = Stopwatch.createStarted();
-        }
-
-        final SmbFile smbFile;
+        SmbFile smbFile;
         try {
             smbFile = new SmbFile("smb://" + uri, NtlmPasswordAuthentication.ANONYMOUS);
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
-        String mimeType = smbFile.getContentType();
-        if (mimeType == null) {
-            mimeType = SmbUtils.getMineType(uri);
-        }
-        final Response response = serveFile(session.getHeaders(), smbFile, mimeType);
 
-        if (BuildConfig.DEBUG) {
-            assert stopWatch != null;
-            final long elapsed = stopWatch.elapsed(TimeUnit.MILLISECONDS);
-            Log.v(TAG, "elapsed time(ms): " + elapsed);
+        Response response = null;
+        try {
+            if (smbFile.isFile()) {
+                String mimeType = smbFile.getContentType();
+                if (mimeType == null) {
+                    mimeType = SmbUtils.getMineType(uri);
+                }
+                response = serveFile(session.getHeaders(), smbFile, mimeType);
+            } else if (smbFile.isDirectory()) {
+                response = serveDir(smbFile, session.getUri());
+            }
+        } catch (IOException e) {
+            Log.w(TAG, e);
         }
         return response;
     }
@@ -176,7 +174,28 @@ public final class HttpServer extends NanoHTTPD {
         return res;
     }
 
+    private Response serveDir(SmbFile file, String baseUrl) throws SmbException, UnknownHostException {
+        final String canonicalPath = file.getCanonicalPath();
+        if (!canonicalPath.endsWith("/")) {
+            try {
+                file = new SmbFile(file, canonicalPath + "/");
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        final SmbFile[] list = file.listFiles();
+        StringBuilder sb = new StringBuilder();
+        for (SmbFile f : list) {
+            final String name = f.getName();
+            sb.append(String.format("<a href=\"%s\">%s</a><br>", Uri.encode(name), name));
+        }
+
+        return newFixedLengthResponse(Response.Status.OK, MIME_HTML + "; charset=UTF-8",
+                sb.toString());
+    }
+
     protected Response getForbiddenResponse() {
-        return newFixedLengthResponse(Response.Status.FORBIDDEN, NanoHTTPD.MIME_PLAINTEXT, "Forbidden");
+        return newFixedLengthResponse(Response.Status.FORBIDDEN, MIME_PLAINTEXT, "Forbidden");
     }
 }
