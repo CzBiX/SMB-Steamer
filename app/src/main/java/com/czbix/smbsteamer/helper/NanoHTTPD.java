@@ -1337,7 +1337,7 @@ public abstract class NanoHTTPD {
                 outputStream.flush();
                 safeClose(this.data);
             } catch (IOException ioe) {
-                NanoHTTPD.LOG.log(Level.SEVERE, "Could not send response to the client", ioe);
+                NanoHTTPD.LOG.log(Level.WARNING, "Could not send response to the client", ioe);
             }
         }
 

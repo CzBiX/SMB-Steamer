@@ -20,11 +20,6 @@ import jcifs.smb.SmbFile;
 
 public final class HttpServer extends NanoHTTPD {
     private static final String TAG = HttpServer.class.getSimpleName();
-    static {
-        if (!BuildConfig.DEBUG) {
-            Logger.getLogger(NanoHTTPD.class.getName()).setLevel(Level.OFF);
-        }
-    }
 
     public static final int PORT = 23333;
     public static final String URI_PREFIX = "/stream/";
