@@ -66,7 +66,7 @@ public final class HttpServer extends NanoHTTPD {
                     mimeType = SmbUtils.getMineType(uri);
                 }
                 response = serveFile(session.getHeaders(), smbFile, mimeType);
-            } else if (smbFile.isDirectory()) {
+            } else if (smbFile.getType() == SmbFile.TYPE_FILESYSTEM && smbFile.isDirectory()) {
                 response = serveDir(smbFile, session.getUri());
             }
         } catch (IOException e) {
