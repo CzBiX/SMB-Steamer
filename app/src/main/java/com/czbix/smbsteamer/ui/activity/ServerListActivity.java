@@ -8,12 +8,12 @@ import android.view.MenuItem;
 
 import com.czbix.smbsteamer.R;
 
-public class ServerActivity extends AppCompatActivity {
+public class ServerListActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_server);
+        setContentView(R.layout.activity_server_list);
 
         startActivity(new Intent(this, FileListActivity.class));
     }

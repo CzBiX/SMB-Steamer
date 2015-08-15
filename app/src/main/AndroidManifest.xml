@@ -11,7 +11,7 @@
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
         <activity
-            android:name=".ui.activity.ServerActivity"
+            android:name=".ui.activity.ServerListActivity"
             android:label="@string/title_activity_server" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -22,7 +22,7 @@
         <activity
             android:name=".ui.activity.FileListActivity"
             android:label="@string/title_activity_file_list"
-            android:parentActivityName=".ui.activity.ServerActivity" >
+            android:parentActivityName=".ui.activity.ServerListActivity" >
         </activity>
 
         <service
