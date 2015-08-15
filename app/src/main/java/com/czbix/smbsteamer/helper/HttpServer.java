@@ -4,14 +4,21 @@ import android.net.Uri;
 import android.util.Log;
 
 import com.czbix.smbsteamer.BuildConfig;
+import com.czbix.smbsteamer.util.IoUtils;
 import com.czbix.smbsteamer.util.SmbUtils;
+import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import jcifs.smb.NtlmPasswordAuthentication;
 import jcifs.smb.SmbException;
@@ -25,6 +32,7 @@ public final class HttpServer extends NanoHTTPD {
 
     public HttpServer() {
         super(BuildConfig.DEBUG ? null : "127.0.0.1", PORT);
+        setAsyncRunner(new ThreadPoolRunner());
     }
 
     @Override
@@ -67,7 +75,7 @@ public final class HttpServer extends NanoHTTPD {
                 }
                 response = serveFile(session.getHeaders(), smbFile, mimeType);
             } else if (smbFile.getType() == SmbFile.TYPE_FILESYSTEM && smbFile.isDirectory()) {
-                response = serveDir(smbFile, session.getUri());
+                response = serveDir(smbFile);
             }
         } catch (IOException e) {
             Log.w(TAG, e);
@@ -77,6 +85,8 @@ public final class HttpServer extends NanoHTTPD {
 
     private Response serveFile(Map<String, String> header, SmbFile file, String mime) {
         Response res;
+        boolean success = false;
+        InputStream fis = null;
         try {
             // Calculate etag
             String etag = Integer.toHexString((file.getCanonicalPath() + file.lastModified() + "" + file.length()).hashCode());
@@ -111,6 +121,7 @@ public final class HttpServer extends NanoHTTPD {
             // requested
             long fileLen = file.length();
 
+            fis = file.getInputStream();
             if (headerIfRangeMissingOrMatching && range != null && startFrom >= 0 && startFrom < fileLen) {
                 // range request that matches current etag
                 // and the startFrom of the range is satisfiable
@@ -130,7 +141,6 @@ public final class HttpServer extends NanoHTTPD {
                         newLen = 0;
                     }
 
-                    InputStream fis = file.getInputStream();
                     ByteStreams.skipFully(fis, startFrom);
 
                     res = newFixedLengthResponse(Response.Status.PARTIAL_CONTENT, mime, fis, newLen);
@@ -162,21 +172,27 @@ public final class HttpServer extends NanoHTTPD {
                     res.addHeader("ETag", etag);
                 } else {
                     // supply the file
-                    res = newFixedLengthResponse(Response.Status.OK, mime, file.getInputStream(), file.length());
-                    res.addHeader("Content-Length", "" + fileLen);
+                    res = newFixedLengthResponse(Response.Status.OK, mime, fis, fileLen);
+                    res.addHeader("Content-Length", Long.toString(fileLen));
                     res.addHeader("ETag", etag);
                 }
             }
+            success = true;
         } catch (IOException ioe) {
             res = getForbiddenResponse();
+        } finally {
+            if (!success && fis != null) {
+                IoUtils.closeQuietly(fis);
+            }
         }
 
         return res;
     }
 
-    private Response serveDir(SmbFile file, String baseUrl) throws SmbException, UnknownHostException {
+    private Response serveDir(SmbFile file) throws SmbException, UnknownHostException {
         final String canonicalPath = file.getCanonicalPath();
         if (!canonicalPath.endsWith("/")) {
+            // MX Player can't handle redirect
             try {
                 file = new SmbFile(file, canonicalPath + "/");
             } catch (MalformedURLException e) {
@@ -197,5 +213,30 @@ public final class HttpServer extends NanoHTTPD {
 
     protected Response getForbiddenResponse() {
         return newFixedLengthResponse(Response.Status.FORBIDDEN, MIME_PLAINTEXT, "Forbidden");
+    }
+
+    public static class ThreadPoolRunner implements AsyncRunner {
+        private final ExecutorService mExecutor = Executors.newCachedThreadPool();
+        private final List<ClientHandler> running = Collections.synchronizedList(new ArrayList<ClientHandler>());
+
+        @Override
+        public void closeAll() {
+            // copy of the list for concurrency
+            mExecutor.shutdown();
+            for (ClientHandler clientHandler : Lists.newArrayList(running)) {
+                clientHandler.close();
+            }
+        }
+
+        @Override
+        public void closed(ClientHandler clientHandler) {
+            running.remove(clientHandler);
+        }
+
+        @Override
+        public void exec(ClientHandler clientHandler) {
+            running.add(clientHandler);
+            mExecutor.submit(clientHandler);
+        }
     }
 }
