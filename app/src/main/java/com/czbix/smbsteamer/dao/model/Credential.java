@@ -1,11 +1,16 @@
 package com.czbix.smbsteamer.dao.model;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
+import com.google.common.base.Objects;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import jcifs.smb.NtlmPasswordAuthentication;
 
-public abstract class Credential {
+public abstract class Credential implements Parcelable {
     private static final String KEY_ANONYMOUS = "anonymous";
     private static final String KEY_DOMAIN = "domain";
     private static final String KEY_USERNAME = "username";
@@ -84,4 +89,66 @@ public abstract class Credential {
             return "";
         }
     };
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        final boolean anonymous = isAnonymous();
+        dest.writeByte((byte) (anonymous ? 1 : 0));
+        if (anonymous) {
+            return;
+        }
+
+        dest.writeString(getDomain());
+        dest.writeString(getUsername());
+        dest.writeString(getPassword());
+    }
+
+    public static final Creator<Credential> CREATOR = new Creator<Credential>() {
+        public Credential createFromParcel(Parcel source) {
+            final boolean anonymous = source.readByte() == 1;
+            if (anonymous) {
+                return ANONYMOUS;
+            }
+
+            final String domain = source.readString();
+            final String username = source.readString();
+            final String password = source.readString();
+
+            return new PasswordCredential(domain, username, password);
+        }
+
+        public Credential[] newArray(int size) {
+            return new Credential[size];
+        }
+    };
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Credential)) return false;
+        Credential that = (Credential) o;
+        if (isAnonymous() != that.isAnonymous()) {
+            return false;
+        }
+        //noinspection SimplifiableIfStatement
+        if (isAnonymous()) {
+            return true;
+        }
+        return Objects.equal(getDomain(), that.getDomain()) &&
+                Objects.equal(getUsername(), that.getUsername()) &&
+                Objects.equal(getPassword(), that.getPassword());
+    }
+
+    @Override
+    public int hashCode() {
+        if (isAnonymous()) {
+            return Objects.hashCode(true);
+        }
+        return Objects.hashCode(getDomain(), getUsername(), getPassword());
+    }
 }

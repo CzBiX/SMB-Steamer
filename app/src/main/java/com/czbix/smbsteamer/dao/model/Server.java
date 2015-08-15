@@ -1,11 +1,16 @@
 package com.czbix.smbsteamer.dao.model;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
+import com.google.common.base.Objects;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import jcifs.smb.NtlmPasswordAuthentication;
 
-public class Server {
+public class Server implements Parcelable {
     private static final String KEY_HOST = "host";
     private static final String KEY_SHARE = "share";
     private static final String KEY_CREDENTIAL = "credential";
@@ -57,4 +62,47 @@ public class Server {
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Server)) return false;
+        Server server = (Server) o;
+        return Objects.equal(mHost, server.mHost) &&
+                Objects.equal(mShare, server.mShare) &&
+                Objects.equal(mCredential, server.mCredential);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(mHost, mShare, mCredential);
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(this.mHost);
+        dest.writeString(this.mShare);
+        dest.writeParcelable(this.mCredential, 0);
+    }
+
+    protected Server(Parcel in) {
+        this.mHost = in.readString();
+        this.mShare = in.readString();
+        this.mCredential = Credential.CREATOR.createFromParcel(in);
+    }
+
+    public static final Creator<Server> CREATOR = new Creator<Server>() {
+        public Server createFromParcel(Parcel source) {
+            return new Server(source);
+        }
+
+        public Server[] newArray(int size) {
+            return new Server[size];
+        }
+    };
 }
