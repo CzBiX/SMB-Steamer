@@ -6,16 +6,19 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.czbix.smbsteamer.BuildConfig;
 import com.czbix.smbsteamer.R;
+import com.czbix.smbsteamer.dao.model.Credential;
+import com.czbix.smbsteamer.dao.model.Server;
+import com.czbix.smbsteamer.ui.fragment.ServerListFragment;
 
-public class ServerListActivity extends AppCompatActivity {
-
+public class ServerListActivity extends AppCompatActivity implements ServerListFragment.Listener {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_server_list);
 
-        startActivity(new Intent(this, FileListActivity.class));
+        final ServerListFragment fragment = ServerListFragment.newInstance();
+        getSupportFragmentManager().beginTransaction().replace(android.R.id.content, fragment).commit();
     }
 
     @Override
@@ -34,9 +37,22 @@ public class ServerListActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            if (BuildConfig.DEBUG) {
+                // TODO: remove test code
+                final Server server = new Server("192.168.1.1", "media", Credential.ANONYMOUS);
+                onServerClick(server);
+            }
             return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onServerClick(Server server) {
+        final Intent intent = new Intent(this, FileListActivity.class);
+        intent.putExtra(FileListActivity.ARG_SERVER, server);
+
+        startActivity(intent);
     }
 }

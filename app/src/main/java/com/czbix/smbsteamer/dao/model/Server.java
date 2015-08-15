@@ -37,6 +37,10 @@ public class Server implements Parcelable {
         return mShare;
     }
 
+    public String getName() {
+        return mShare;
+    }
+
     public String toJson() {
         final JSONObject json = new JSONObject();
         try {

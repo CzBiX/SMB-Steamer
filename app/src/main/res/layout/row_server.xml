@@ -6,7 +6,7 @@
     android:paddingBottom="@dimen/row_margin"
     tools:context="com.czbix.smbsteamer.ui.fragment.FileListFragment">
 
-    <TextView android:id="@+id/file_name"
+    <TextView android:id="@+id/server_name"
         tools:text="@string/hello_world" android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 

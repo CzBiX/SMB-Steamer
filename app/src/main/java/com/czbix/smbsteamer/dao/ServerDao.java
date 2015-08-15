@@ -9,7 +9,7 @@ public class ServerDao {
     private static final String KEY_SERVER = "server";
 
     @Nullable
-    public Server getServer() {
+    public static Server getServer() {
         final String server = PreferenceHelper.getPreferences().getString(KEY_SERVER, null);
         if (server == null) {
             return null;

@@ -1,24 +1,18 @@
 package com.czbix.smbsteamer.ui.fragment;
 
-import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
 import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import com.czbix.smbsteamer.BuildConfig;
-import com.czbix.smbsteamer.R;
+import com.czbix.smbsteamer.dao.model.Server;
 import com.czbix.smbsteamer.model.SmbFileItem;
 import com.czbix.smbsteamer.service.StreamService;
+import com.czbix.smbsteamer.ui.adapter.FileAdapter;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
@@ -28,17 +22,19 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Stack;
 
-import jcifs.smb.NtlmPasswordAuthentication;
 import jcifs.smb.SmbException;
 import jcifs.smb.SmbFile;
 
 public class FileListFragment extends ListFragment {
-    private FileListAdapter mAdapter;
+    public static final String ARG_SERVER = "server";
+
+    private FileAdapter mAdapter;
     private FileListTask mFileListTask;
     private Stack<SmbFileItem> mHistory;
 
-    public static FileListFragment newInstance() {
+    public static FileListFragment newInstance(Bundle args) {
         final FileListFragment fragment = new FileListFragment();
+        fragment.setArguments(args);
         return fragment;
     }
 
@@ -53,17 +49,20 @@ public class FileListFragment extends ListFragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mAdapter = new FileListAdapter(getActivity());
+        final Bundle arguments = getArguments();
+        final Server server = arguments.getParcelable(ARG_SERVER);
+
+        mAdapter = new FileAdapter(getActivity());
         setListAdapter(mAdapter);
 
         mHistory = new Stack<>();
-        initRoot();
+        initRoot(server);
     }
 
-    private void initRoot() {
+    private void initRoot(Server server) {
         try {
-            String server = BuildConfig.DEBUG ? "192.168.1.1/" : "";
-            SmbFile smbFile = new SmbFile("smb://" + server, NtlmPasswordAuthentication.ANONYMOUS);
+            SmbFile smbFile = new SmbFile(String.format("smb://%s/%s/", server.getHost(), server.getShare()),
+                    server.getCredential());
             final SmbFileItem smbFileItem;
             try {
                 smbFileItem = new SmbFileItem(smbFile, true);
@@ -88,21 +87,6 @@ public class FileListFragment extends ListFragment {
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
-    @Override
     public void onListItemClick(ListView l, View v, int position, long id) {
         final SmbFileItem item = (SmbFileItem) l.getItemAtPosition(position);
         if (item.isDirectory()) {
@@ -123,8 +107,6 @@ public class FileListFragment extends ListFragment {
             mFileListTask.cancel(false);
         }
 
-        mAdapter.clear();
-
         mFileListTask = new FileListTask(this);
         mFileListTask.execute(getCurFile());
     }
@@ -139,46 +121,6 @@ public class FileListFragment extends ListFragment {
         return false;
     }
 
-    public final static class FileListAdapter extends ArrayAdapter<SmbFileItem> {
-        private final LayoutInflater mInflater;
-
-        public FileListAdapter(Context context) {
-            super(context, 0);
-
-            mInflater = LayoutInflater.from(context);
-        }
-
-        @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-            ViewHolder viewHolder;
-            if (convertView == null) {
-                convertView = mInflater.inflate(R.layout.row_file, parent , false);
-                viewHolder = new ViewHolder(convertView);
-                convertView.setTag(viewHolder);
-            } else {
-                viewHolder = ((ViewHolder) convertView.getTag());
-                Preconditions.checkNotNull(viewHolder);
-            }
-
-            final SmbFileItem item = getItem(position);
-            viewHolder.fillData(item);
-
-            return convertView;
-        }
-
-        private final class ViewHolder {
-            private final TextView mFileName;
-
-            public ViewHolder(View view) {
-                mFileName = (TextView) view.findViewById(R.id.file_name);
-            }
-
-            public void fillData(SmbFileItem item) {
-                mFileName.setText(item.getName());
-            }
-        }
-    }
-
     public final static class FileListTask extends AsyncTask<SmbFileItem, Void, List<SmbFileItem>> {
         private static final String TAG = FileListTask.class.getSimpleName();
         private final FileListFragment mFragment;
@@ -187,6 +129,12 @@ public class FileListFragment extends ListFragment {
 
         public FileListTask(FileListFragment fragment) {
             mFragment = fragment;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            mFragment.setListShownNoAnimation(false);
+            mFragment.mAdapter.clear();
         }
 
         @Override
@@ -221,6 +169,7 @@ public class FileListFragment extends ListFragment {
                 if (mException instanceof SmbException) {
                     Toast.makeText(mFragment.getActivity(), mException.getMessage(), Toast.LENGTH_SHORT).show();
                     Log.w(TAG, mException);
+                    mFragment.setListShown(true);
                     return;
                 }
                 throw new RuntimeException(mException);
@@ -228,6 +177,7 @@ public class FileListFragment extends ListFragment {
 
             Log.d(TAG, "result length: " + smbFiles.size());
             mFragment.mAdapter.addAll(smbFiles);
+            mFragment.setListShown(true);
         }
     }
 }

@@ -8,6 +8,8 @@ import android.view.MenuItem;
 import com.czbix.smbsteamer.ui.fragment.FileListFragment;
 
 public class FileListActivity extends AppCompatActivity {
+    public static final String ARG_SERVER = FileListFragment.ARG_SERVER;
+
     private FileListFragment mFragment;
 
     @Override
@@ -16,7 +18,7 @@ public class FileListActivity extends AppCompatActivity {
         //noinspection ConstantConditions
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        mFragment = FileListFragment.newInstance();
+        mFragment = FileListFragment.newInstance(getIntent().getExtras());
         getSupportFragmentManager().beginTransaction().replace(android.R.id.content, mFragment).commit();
     }
 
