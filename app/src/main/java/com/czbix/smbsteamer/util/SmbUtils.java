@@ -3,13 +3,22 @@ package com.czbix.smbsteamer.util;
 import android.text.TextUtils;
 import android.webkit.MimeTypeMap;
 
+import com.google.common.io.Files;
+
 import jcifs.Config;
+import jcifs.smb.SmbFile;
 
 public class SmbUtils {
     private static final String TAG = SmbUtils.class.getSimpleName();
 
     public static void init() {
         Config.setProperty("jcifs.resolveOrder", "BCAST,DNS");
+    }
+
+    public static String getMimeType(SmbFile file) {
+        final String name = file.getName();
+        final String ext = Files.getFileExtension(name);
+        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
     }
 
     public static String getMineType(String url) {

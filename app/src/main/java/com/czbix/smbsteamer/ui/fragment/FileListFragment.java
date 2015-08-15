@@ -13,6 +13,7 @@ import com.czbix.smbsteamer.dao.model.Server;
 import com.czbix.smbsteamer.model.SmbFileItem;
 import com.czbix.smbsteamer.service.StreamService;
 import com.czbix.smbsteamer.ui.adapter.FileAdapter;
+import com.czbix.smbsteamer.util.SmbUtils;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
@@ -98,7 +99,8 @@ public class FileListFragment extends ListFragment {
         if (!StreamService.isRunning()) {
             getActivity().startService(new Intent(getActivity(), StreamService.class));
         }
-        final Intent intent = new Intent(Intent.ACTION_VIEW, item.getHttpUri());
+        final Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setDataAndType(item.getHttpUri(), SmbUtils.getMimeType(item.get()));
         startActivity(intent);
     }
 
