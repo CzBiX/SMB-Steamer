@@ -33,6 +33,8 @@ package com.czbix.smbsteamer.helper;
  * #L%
  */
 
+import com.czbix.smbsteamer.BuildConfig;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
@@ -1337,7 +1339,11 @@ public abstract class NanoHTTPD {
                 outputStream.flush();
                 safeClose(this.data);
             } catch (IOException ioe) {
-                NanoHTTPD.LOG.log(Level.WARNING, "Could not send response to the client", ioe);
+                if (ioe instanceof SocketException) {
+                    NanoHTTPD.LOG.log(Level.INFO, "Could not send response to the client, %s", ioe.getMessage());
+                } else {
+                    NanoHTTPD.LOG.log(Level.WARNING, "Could not send response to the client", ioe);
+                }
             }
         }
 
@@ -1909,5 +1915,11 @@ public abstract class NanoHTTPD {
 
     public final boolean wasStarted() {
         return this.myServerSocket != null && this.myThread != null;
+    }
+
+    static {
+        if (!BuildConfig.DEBUG) {
+            LOG.setLevel(Level.OFF);
+        }
     }
 }
