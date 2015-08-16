@@ -12,12 +12,10 @@ import jcifs.smb.NtlmPasswordAuthentication;
 
 public abstract class Credential implements Parcelable {
     private static final String KEY_ANONYMOUS = "anonymous";
-    private static final String KEY_DOMAIN = "domain";
     private static final String KEY_USERNAME = "username";
     private static final String KEY_PASSWORD = "password";
 
     public abstract boolean isAnonymous();
-    protected abstract String getDomain();
     protected abstract String getUsername();
     protected abstract String getPassword();
 
@@ -27,7 +25,7 @@ public abstract class Credential implements Parcelable {
             if (isAnonymous()) {
                 mAuthentication = NtlmPasswordAuthentication.ANONYMOUS;
             } else {
-                mAuthentication = new NtlmPasswordAuthentication(getDomain(), getUsername(), getPassword());
+                mAuthentication = new NtlmPasswordAuthentication(null, getUsername(), getPassword());
             }
         }
 
@@ -42,11 +40,10 @@ public abstract class Credential implements Parcelable {
                 return ANONYMOUS;
             }
 
-            final String domain = json.getString(KEY_DOMAIN);
             final String username = json.getString(KEY_USERNAME);
             final String password = json.getString(KEY_PASSWORD);
 
-            return new PasswordCredential(domain, username, password);
+            return new PasswordCredential(username, password);
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }
@@ -57,8 +54,7 @@ public abstract class Credential implements Parcelable {
         try {
             json.put(KEY_ANONYMOUS, isAnonymous());
             if (!isAnonymous()) {
-                json.put(KEY_DOMAIN, getDomain())
-                        .put(KEY_USERNAME, getUsername())
+                json.put(KEY_USERNAME, getUsername())
                         .put(KEY_PASSWORD, getPassword());
             }
         } catch (JSONException e) {
@@ -72,11 +68,6 @@ public abstract class Credential implements Parcelable {
         @Override
         public boolean isAnonymous() {
             return true;
-        }
-
-        @Override
-        public String getDomain() {
-            return "";
         }
 
         @Override
@@ -103,7 +94,6 @@ public abstract class Credential implements Parcelable {
             return;
         }
 
-        dest.writeString(getDomain());
         dest.writeString(getUsername());
         dest.writeString(getPassword());
     }
@@ -115,11 +105,10 @@ public abstract class Credential implements Parcelable {
                 return ANONYMOUS;
             }
 
-            final String domain = source.readString();
             final String username = source.readString();
             final String password = source.readString();
 
-            return new PasswordCredential(domain, username, password);
+            return new PasswordCredential(username, password);
         }
 
         public Credential[] newArray(int size) {
@@ -139,8 +128,7 @@ public abstract class Credential implements Parcelable {
         if (isAnonymous()) {
             return true;
         }
-        return Objects.equal(getDomain(), that.getDomain()) &&
-                Objects.equal(getUsername(), that.getUsername()) &&
+        return Objects.equal(getUsername(), that.getUsername()) &&
                 Objects.equal(getPassword(), that.getPassword());
     }
 
@@ -149,6 +137,6 @@ public abstract class Credential implements Parcelable {
         if (isAnonymous()) {
             return Objects.hashCode(true);
         }
-        return Objects.hashCode(getDomain(), getUsername(), getPassword());
+        return Objects.hashCode(getUsername(), getPassword());
     }
 }

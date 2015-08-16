@@ -17,4 +17,10 @@ public class ServerDao {
 
         return Server.fromJson(server);
     }
+
+    public static void putServer(Server server) {
+        final String json = server.toJson();
+
+        PreferenceHelper.getPreferences().edit().putString(KEY_SERVER, json).apply();
+    }
 }

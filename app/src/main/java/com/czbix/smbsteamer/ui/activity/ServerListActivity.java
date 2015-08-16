@@ -8,17 +8,21 @@ import android.view.MenuItem;
 
 import com.czbix.smbsteamer.BuildConfig;
 import com.czbix.smbsteamer.R;
+import com.czbix.smbsteamer.dao.ServerDao;
 import com.czbix.smbsteamer.dao.model.Credential;
 import com.czbix.smbsteamer.dao.model.Server;
+import com.czbix.smbsteamer.ui.dialog.AddServerDialog;
 import com.czbix.smbsteamer.ui.fragment.ServerListFragment;
 
-public class ServerListActivity extends AppCompatActivity implements ServerListFragment.Listener {
+public class ServerListActivity extends AppCompatActivity implements ServerListFragment.Listener, AddServerDialog.Listener {
+    private ServerListFragment mFragment;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        final ServerListFragment fragment = ServerListFragment.newInstance();
-        getSupportFragmentManager().beginTransaction().replace(android.R.id.content, fragment).commit();
+        mFragment = ServerListFragment.newInstance();
+        getSupportFragmentManager().beginTransaction().replace(android.R.id.content, mFragment).commit();
     }
 
     @Override
@@ -30,19 +34,18 @@ public class ServerListActivity extends AppCompatActivity implements ServerListF
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            if (BuildConfig.DEBUG) {
-                // TODO: remove test code
-                final Server server = new Server("192.168.1.1", "media", Credential.ANONYMOUS);
-                onServerClick(server);
-            }
-            return true;
+        switch (item.getItemId()) {
+            case R.id.action_settings:
+                if (BuildConfig.DEBUG) {
+                    // TODO: remove test code
+                    final Server server = new Server("192.168.1.1", "media", Credential.ANONYMOUS);
+                    onServerClick(server);
+                }
+                return true;
+            case R.id.action_add_server:
+                final AddServerDialog dialog = new AddServerDialog();
+                dialog.show(getSupportFragmentManager(), "add_server");
+                return true;
         }
 
         return super.onOptionsItemSelected(item);
@@ -54,5 +57,14 @@ public class ServerListActivity extends AppCompatActivity implements ServerListF
         intent.putExtra(FileListActivity.ARG_SERVER, server);
 
         startActivity(intent);
+    }
+
+    @Override
+    public void onDismiss() {}
+
+    @Override
+    public void onAdd(Server server) {
+        ServerDao.putServer(server);
+        mFragment.reloadServers();
     }
 }

@@ -10,8 +10,8 @@ import android.widget.ListView;
 import com.czbix.smbsteamer.dao.ServerDao;
 import com.czbix.smbsteamer.dao.model.Server;
 import com.czbix.smbsteamer.ui.adapter.ServerAdapter;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 import java.util.List;
 
@@ -41,7 +41,15 @@ public class ServerListFragment extends ListFragment {
         loadServers();
     }
 
+    public void reloadServers() {
+        loadServers();
+    }
+
     private void loadServers() {
+        if (mTask != null) {
+            mTask.cancel(false);
+        }
+
         mTask = new AsyncTask<Void, Void, List<Server>>() {
             @Override
             protected List<Server> doInBackground(Void... params) {
@@ -55,10 +63,13 @@ public class ServerListFragment extends ListFragment {
 
             @Override
             protected void onPostExecute(List<Server> servers) {
-                Preconditions.checkState(mAdapter == null);
-
-                mAdapter = new ServerAdapter(getActivity(), servers);
-                setListAdapter(mAdapter);
+                if (mAdapter == null) {
+                    mAdapter = new ServerAdapter(getActivity(), Lists.newArrayList(servers));
+                    setListAdapter(mAdapter);
+                } else {
+                    mAdapter.clear();
+                    mAdapter.addAll(servers);
+                }
             }
         };
         mTask.execute();
