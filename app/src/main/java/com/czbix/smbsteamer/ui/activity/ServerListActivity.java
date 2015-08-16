@@ -38,7 +38,7 @@ public class ServerListActivity extends AppCompatActivity implements ServerListF
             case R.id.action_settings:
                 if (BuildConfig.DEBUG) {
                     // TODO: remove test code
-                    final Server server = new Server("192.168.1.1", "media", Credential.ANONYMOUS);
+                    final Server server = new Server("192.168.1.1", "media", null, Credential.ANONYMOUS);
                     onServerClick(server);
                 }
                 return true;

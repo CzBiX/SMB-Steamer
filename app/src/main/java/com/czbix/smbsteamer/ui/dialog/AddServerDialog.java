@@ -14,11 +14,13 @@ import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.EditText;
 
 import com.czbix.smbsteamer.R;
 import com.czbix.smbsteamer.dao.model.Credential;
 import com.czbix.smbsteamer.dao.model.PasswordCredential;
 import com.czbix.smbsteamer.dao.model.Server;
+import com.google.common.base.Strings;
 
 public class AddServerDialog extends DialogFragment implements DialogInterface.OnClickListener {
     private Listener mListener;
@@ -26,6 +28,7 @@ public class AddServerDialog extends DialogFragment implements DialogInterface.O
     private TextInputLayout mTextShare;
     private TextInputLayout mTextUsername;
     private TextInputLayout mTextPassword;
+    private TextInputLayout mTextName;
 
     @Override
     public void onAttach(Activity activity) {
@@ -43,9 +46,32 @@ public class AddServerDialog extends DialogFragment implements DialogInterface.O
         final View view = inflater.inflate(R.layout.dialog_add_server, null);
         mTextServer = ((TextInputLayout) view.findViewById(R.id.text_server));
         mTextShare = ((TextInputLayout) view.findViewById(R.id.text_share));
+        mTextName = (TextInputLayout) view.findViewById(R.id.text_name);
         mTextUsername = ((TextInputLayout) view.findViewById(R.id.text_username));
         mTextPassword = ((TextInputLayout) view.findViewById(R.id.text_password));
 
+        mTextShare.getEditText().addTextChangedListener(new TextWatcher() {
+            private String lastStr = "";
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                final EditText editText = mTextName.getEditText();
+                if (TextUtils.equals(lastStr, editText.getText())) {
+                    editText.setText(s);
+                }
+                lastStr = s.toString();
+            }
+        });
         mTextUsername.getEditText().addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -96,9 +122,9 @@ public class AddServerDialog extends DialogFragment implements DialogInterface.O
     }
 
     private Server buildServerInfo() {
-
         final String server = mTextServer.getEditText().getText().toString();
         final String share = mTextShare.getEditText().getText().toString();
+        final String name = Strings.emptyToNull(mTextName.getEditText().getText().toString());
         final Credential credential;
         if (TextUtils.isEmpty(mTextUsername.getEditText().getText())) {
             credential = Credential.ANONYMOUS;
@@ -107,7 +133,7 @@ public class AddServerDialog extends DialogFragment implements DialogInterface.O
             final String password = mTextPassword.getEditText().getText().toString();
             credential = new PasswordCredential(username, password);
         }
-        return new Server(server, share, credential);
+        return new Server(server, share, name, credential);
     }
 
     public interface Listener {

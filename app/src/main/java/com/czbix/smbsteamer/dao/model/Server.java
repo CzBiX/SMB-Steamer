@@ -13,15 +13,18 @@ import jcifs.smb.NtlmPasswordAuthentication;
 public class Server implements Parcelable {
     private static final String KEY_HOST = "host";
     private static final String KEY_SHARE = "share";
+    private static final String KEY_NAME = "name";
     private static final String KEY_CREDENTIAL = "credential";
 
     private final String mHost;
     private final String mShare;
+    private final String mName;
     private final Credential mCredential;
 
-    public Server(String host, String share, Credential credential) {
+    public Server(String host, String share, String name, Credential credential) {
         mHost = host;
         mShare = share;
+        mName = name;
         mCredential = credential;
     }
 
@@ -38,7 +41,7 @@ public class Server implements Parcelable {
     }
 
     public String getName() {
-        return mShare;
+        return mName == null ? mShare : mName;
     }
 
     public String toJson() {
@@ -46,6 +49,7 @@ public class Server implements Parcelable {
         try {
             json.put(KEY_HOST, mHost)
                     .put(KEY_SHARE, mShare)
+                    .put(KEY_NAME, mName)
                     .put(KEY_CREDENTIAL, mCredential.toJson());
         } catch (JSONException e) {
             throw new RuntimeException(e);
@@ -59,9 +63,10 @@ public class Server implements Parcelable {
             final JSONObject json = new JSONObject(str);
             final String host = json.getString(KEY_HOST);
             final String share = json.getString(KEY_SHARE);
+            final String name = json.getString(KEY_NAME);
             final Credential credential = Credential.fromJson(json.getString(KEY_CREDENTIAL));
 
-            return new Server(host, share, credential);
+            return new Server(host, share, name, credential);
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }
@@ -74,12 +79,13 @@ public class Server implements Parcelable {
         Server server = (Server) o;
         return Objects.equal(mHost, server.mHost) &&
                 Objects.equal(mShare, server.mShare) &&
+                Objects.equal(mName, server.mName) &&
                 Objects.equal(mCredential, server.mCredential);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(mHost, mShare, mCredential);
+        return Objects.hashCode(mHost, mShare, mName, mCredential);
     }
 
     @Override
@@ -91,12 +97,14 @@ public class Server implements Parcelable {
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeString(this.mHost);
         dest.writeString(this.mShare);
+        dest.writeString(this.mName);
         dest.writeParcelable(this.mCredential, 0);
     }
 
     protected Server(Parcel in) {
         this.mHost = in.readString();
         this.mShare = in.readString();
+        this.mName = in.readString();
         this.mCredential = Credential.CREATOR.createFromParcel(in);
     }
 
