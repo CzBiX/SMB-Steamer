@@ -10,9 +10,11 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import com.czbix.smbsteamer.dao.model.Server;
+import com.czbix.smbsteamer.helper.PreferenceHelper;
 import com.czbix.smbsteamer.model.SmbFileItem;
 import com.czbix.smbsteamer.service.StreamService;
 import com.czbix.smbsteamer.ui.adapter.FileAdapter;
+import com.czbix.smbsteamer.util.IoUtils;
 import com.czbix.smbsteamer.util.SmbUtils;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -154,7 +156,14 @@ public class FileListFragment extends ListFragment {
                 });
 
                 final ImmutableList.Builder<SmbFileItem> builder = ImmutableList.builder();
+                final boolean onlyVideo = PreferenceHelper.isOnlyVideo();
+
                 for (SmbFile file : files) {
+                    if (onlyVideo) {
+                        if (file.isFile() && !IoUtils.isVideoFile(file.getName())) {
+                            continue;
+                        }
+                    }
                     builder.add(new SmbFileItem(file, false));
                 }
 

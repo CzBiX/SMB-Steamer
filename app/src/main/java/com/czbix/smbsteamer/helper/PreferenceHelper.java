@@ -6,6 +6,7 @@ import android.preference.PreferenceManager;
 
 public class PreferenceHelper {
     private static final PreferenceHelper INSTANCE;
+    private static final String KEY_ONLY_VIDEO = "only_video";
 
     static {
         INSTANCE = new PreferenceHelper();
@@ -23,5 +24,9 @@ public class PreferenceHelper {
 
     public void init(Context context) {
         mPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+    }
+
+    public static boolean isOnlyVideo() {
+        return getPreferences().getBoolean(KEY_ONLY_VIDEO, true);
     }
 }
