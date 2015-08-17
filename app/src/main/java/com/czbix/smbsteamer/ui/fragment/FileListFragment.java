@@ -115,6 +115,16 @@ public class FileListFragment extends ListFragment {
         mFileListTask.execute(getCurFile());
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+
+        if (mFileListTask != null && mFileListTask.getStatus() != AsyncTask.Status.FINISHED) {
+            mFileListTask.cancel(false);
+            mFileListTask = null;
+        }
+    }
+
     public boolean onBackPressed() {
         if (mHistory.size() > 1) {
             mHistory.pop();
